@@ -5,7 +5,8 @@
 ## ⓪ 다음 세션 시작점 (2026-10-27 v0.5.1 기준)
 - **활성 트랙**: **Swift 네이티브만** (`native/`) — **v0.5.1(빌드 7)** 설치 · `swift test` **56/56** · `--selftest` **163/163** · `--shots` **46장**
 - **동결**: 파이썬 **v0.2.6(빌드 26)** — 소스는 `archive/python/`, 설치 번들은 `~/.Trash/P-Solitaire.app`에 보존. **더 이상 수정·패키징·이동 금지**. 네이티브와 같은 번들 ID이므로 복원/동시 실행 금지.
-- **이번에 끝난 일**: T-022 **스파이더 풀리는 판만**(1·2·4무늬 보장, 메뉴/설정, 다시 시작·이어하기 유지, 백그라운드 안내) + **v0.5.1(빌드 7) 패키징·설치**
+- **이번에 끝난 일**: T-022 **스파이더 풀리는 판만**(1·2·4무늬 보장, 메뉴/설정, 다시 시작·이어하기 유지, 백그라운드 안내) + **v0.5.1(빌드 7) 패키징·설치** + **공개 저장소 신설·PR #1 머지**
+- **저장소**: <https://github.com/BoraSarang/P-Solitaire> — `main`이 기준. 다음 세션은 이 저장소를 clone/`git pull` 해서 시작하면 된다(로컬 작업 폴더와 같은 내용). `archive/python`은 로컬에만 있다
 - **바로 할 일**: T-022를 실제 창에서 눈으로 확인(만드는 중 안내·새 게임·난이도 전환·시드 입력). 그 밖에 새 요청 없음.
 - **검증 명령**: `cd native && ./build_native.sh test` · `./build_native.sh shots` (창 없이) · 패키징 `./build_native.sh package`(`~/Applications/P-Solitaire.app` 덮어씀 — 실행 중이면 먼저 알린다)
 - **이름·ID**: 설치본 `~/Applications/P-Solitaire.app` · 번들 ID `com.borasarang.P-Solitaire` · 로그 `~/Library/Logs/P-Solitaire.log`. 데이터는 `~/.psolitaire-nat.json` 그대로.

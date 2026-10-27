@@ -21,6 +21,7 @@ cd native
 ```
 
 - 설치본: `~/Applications/P-Solitaire.app` · 번들 ID `com.borasarang.P-Solitaire` · 실행 파일 `P-Solitaire` · macOS 14+
+- 저장소: <https://github.com/BoraSarang/P-Solitaire> (공개) · 기본 브랜치 `main` · 작업은 브랜치 + PR(squash merge)로 합칩니다
 - 데이터: `~/.psolitaire-nat.json` (진행 중인 판 스냅숏·설정·전적) · 로그: `~/Library/Logs/P-Solitaire.log`
 - 파이썬 앱/데이터(`~/.Trash/P-Solitaire.app`, `~/.solitaire_python_stats.json`)는 건드리지 않습니다. 파이썬 번들을 복원하면 번들 ID가 겹치므로 네이티브와 동시에 실행하지 마세요.
 - 이전 네이티브 **v0.4.2 `P-Solitaire Native.app`**는 Applications에서 제거해 `~/.Trash/P-Solitaire Native (v0.4.2 235240).app`에 보관했습니다. 현재는 새 `P-Solitaire.app`만 Applications에 있습니다.
