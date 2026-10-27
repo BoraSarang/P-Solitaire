@@ -146,6 +146,9 @@ final class GameController: ObservableObject {
     /// 풀리는 판 생성 작업이 서로 섞이지 않게 하는 표식.
     private var dealToken = UUID()
 
+    /// 배경음 재생기(설정값은 아래 music* 프로퍼티가 읽고 쓴다).
+    let music = MusicPlayer()
+
     // ── 만들기 ────────────────────────────────────────────────────────────
     init() {
         stats = GameController.loadStats()
@@ -173,6 +176,9 @@ final class GameController: ObservableObject {
             }
         }
         updateWindowTitle()
+        music.onTrackChanged = { [weak self] id in self?.musicDidAdvance(to: id) }
+        music.onError = { [weak self] code in self?.notify(code, seconds: 8) }
+        applyMusicSettings()
         Logger.shared.info("앱", "시작(네이티브 \(ProcessInfo.processInfo.operatingSystemVersionString)"
                            + "·게임 \(gameLabel)·설정 \(GameController.statsPath))")
         if let code = startError { notify(code) }
@@ -189,7 +195,10 @@ final class GameController: ObservableObject {
         ["variant": GameKind.klondike.rawValue, "draw_count": 3, "spider_suits": 1,
          "spider_group": defaultSpiderGroup, "spider_winnable": true,
          "theme": defaultTheme, "auto": defaultAuto,
-         "zoom": 100, "sound": true, "animations": true]
+         "zoom": 100, "sound": true, "animations": true,
+         "music": ["on": MusicDefaults.on, "track": MusicDefaults.trackID,
+                   "repeat": MusicDefaults.repeatMode.rawValue,
+                   "volume": MusicDefaults.volume]]
     }
 
     static func defaultStats() -> [String: Any] {
@@ -230,6 +239,18 @@ final class GameController: ObservableObject {
                 ?? defaultAuto[feature.rawValue] ?? false
         }
         s["auto"] = fixed
+
+        let music = dict(raw["music"])
+        let track = (music["track"] as? String) ?? ""
+        let repeatKey = (music["repeat"] as? String) ?? ""
+        let volume = (music["volume"] as? NSNumber)?.doubleValue ?? MusicDefaults.volume
+        s["music"] = [
+            "on": (music["on"] as? Bool) ?? MusicDefaults.on,
+            "track": musicTracks.contains { $0.id == track } ? track : MusicDefaults.trackID,
+            "repeat": MusicRepeatMode(rawValue: repeatKey)?.rawValue
+                ?? MusicDefaults.repeatMode.rawValue,
+            "volume": min(1, max(0, volume)),
+        ]
 
         let rawZoom = (s["zoom"] as? Int) ?? 100
         let nearest = GameController.zoomLevels.min {
@@ -359,6 +380,26 @@ final class GameController: ObservableObject {
     var preferredZoomPct: Int { (settings["zoom"] as? Int) ?? 100 }
     var soundOn: Bool { (settings["sound"] as? Bool) ?? true }
     var animationsOn: Bool { (settings["animations"] as? Bool) ?? true }
+
+    // ── 배경음 ────────────────────────────────────────────────────────────
+    private var musicSettings: [String: Any] { GameController.dict(settings["music"]) }
+    var musicOn: Bool { (musicSettings["on"] as? Bool) ?? MusicDefaults.on }
+    var musicTrackID: String {
+        let key = (musicSettings["track"] as? String) ?? MusicDefaults.trackID
+        return musicTracks.contains { $0.id == key } ? key : MusicDefaults.trackID
+    }
+    var musicRepeatMode: MusicRepeatMode {
+        MusicRepeatMode(rawValue: (musicSettings["repeat"] as? String) ?? "")
+            ?? MusicDefaults.repeatMode
+    }
+    var musicVolume: Double {
+        min(1, max(0, (musicSettings["volume"] as? NSNumber)?.doubleValue
+            ?? MusicDefaults.volume))
+    }
+
+    var musicTrack: MusicTrack {
+        musicTracks.first { $0.id == musicTrackID } ?? musicTracks[0]
+    }
 
     func updateWindowTitle() {
         windowTitle = "P-Solitaire — \(gameLabel) · #\(game.seed)"
@@ -1452,6 +1493,68 @@ final class GameController: ObservableObject {
         settings["animations"] = on
         save()
         setHint("애니메이션 \(on ? "켬" : "끔")")
+        revision &+= 1
+    }
+
+    // ── 배경음 설정 ───────────────────────────────────────────────────────
+    private func setMusicSetting(_ key: String, _ value: Any) {
+        var music = musicSettings
+        music[key] = value
+        settings["music"] = music
+    }
+
+    /// 설정값을 재생기에 반영하고, 실패하면 상태바에 알린다.
+    private func applyMusicSettings() {
+        music.apply(on: musicOn, trackID: musicTrackID,
+                    repeatMode: musicRepeatMode, volume: musicVolume)
+        if let code = music.lastErrorCode { notify(code, seconds: 8) }
+    }
+
+    func setMusic(on: Bool) {
+        setMusicSetting("on", on)
+        save()
+        applyMusicSettings()
+        Logger.shared.info("음악", "배경음 \(on ? "켬" : "끔")")
+        setHint("배경음 \(on ? "켬" : "끔")")
+        revision &+= 1
+    }
+
+    func setMusicTrack(_ id: String) {
+        guard musicTracks.contains(where: { $0.id == id }), id != musicTrackID else { return }
+        setMusicSetting("track", id)
+        save()
+        applyMusicSettings()
+        Logger.shared.info("음악", "곡 선택 \(musicTrack.title)")
+        setHint("배경음: \(musicTrack.title)")
+        revision &+= 1
+    }
+
+    func setMusicRepeat(_ mode: MusicRepeatMode) {
+        guard mode != musicRepeatMode else { return }
+        setMusicSetting("repeat", mode.rawValue)
+        save()
+        applyMusicSettings()
+        Logger.shared.info("음악", "반복 \(mode.title)")
+        setHint("배경음 반복: \(mode.title)")
+        revision &+= 1
+    }
+
+    /// 볼륨은 드래그 중 자주 바뀌므로 저장은 손을 뗄 때만 한다.
+    func setMusicVolume(_ value: Double, save persist: Bool = true) {
+        let clamped = min(1, max(0, value))
+        setMusicSetting("volume", clamped)
+        music.setVolume(clamped)
+        if persist {
+            save()
+            revision &+= 1
+        }
+    }
+
+    /// 목록 반복으로 다음 곡이 시작되면 선택값도 따라간다(다시 재생하지 않는다).
+    func musicDidAdvance(to id: String) {
+        guard musicTracks.contains(where: { $0.id == id }) else { return }
+        setMusicSetting("track", id)
+        save()
         revision &+= 1
     }
 

@@ -29,7 +29,9 @@ struct GameWindowView: View {
         VStack(spacing: 0) {
             BoardCanvas(controller: controller)
                 .frame(width: controller.windowWidth,
-                       height: controller.windowHeight - Metrics.statusH)
+                       height: controller.windowHeight - Metrics.controlH - Metrics.statusH)
+            GameControlBar(controller: controller)
+                .frame(height: Metrics.controlH)
             StatusBarView(controller: controller)
                 .frame(height: Metrics.statusH)
         }
@@ -293,17 +295,14 @@ struct BoardCanvas: View {
     // ── 웨이스트·프리셀·파운데이션·태블로 ──────────────────────────────────
     private func drawPiles(_ ctx: inout GraphicsContext, game: BaseGame,
                            layout: BoardLayout, skipDragged: Bool) {
-        func draw(_ card: Card, lifted: Bool = false) {
+        func draw(_ card: Card) {
             guard let spot = layout.point(card) else { return }
             if skipDragged && isDragged(card) { return }
             if controller.isFlying(card) { return }
             if card.faceup {
-                if lifted {
-                    drawCardFaceShadow(&ctx, card: card, origin: spot,
-                                       radius: 2.5, opacity: 0.22, y: 1.5)
-                } else {
-                    drawCardFace(&ctx, card: card, origin: spot)
-                }
+                // 쉬는 카드는 그림자 없이 평평하게 그린다. 위 카드에 옅은 그림자를
+                // 두르면 집지 않았는데도 집은 것처럼(둥근 테두리처럼) 보인다.
+                drawCardFace(&ctx, card: card, origin: spot)
             } else {
                 drawCardBack(&ctx, origin: spot, style: controller.backKey,
                              theme: controller.backTheme)
@@ -314,19 +313,19 @@ struct BoardCanvas: View {
             let drawCount = (game as? Klondike)?.drawCount ?? 3
             let visible = game.kind == .klondike ? (drawCount == 3 ? 3 : 1) : 1
             let shown = game.waste.suffix(visible)
-            for (index, card) in shown.enumerated() {
-                draw(card, lifted: index == shown.count - 1)
+            for card in shown {
+                draw(card)
             }
         }
         for cell in game.freecells {
-            if let card = cell.last { draw(card, lifted: true) }
+            if let card = cell.last { draw(card) }
         }
         for fi in 0..<game.foundationsCount {
-            if let card = foundationCard(game, fi) { draw(card, lifted: true) }
+            if let card = foundationCard(game, fi) { draw(card) }
         }
         for pile in game.tableau {
-            for (index, card) in pile.enumerated() {
-                draw(card, lifted: index == pile.count - 1)
+            for card in pile {
+                draw(card)
             }
         }
     }
@@ -353,6 +352,111 @@ struct BoardCanvas: View {
         cards += game.foundations.flatMap { $0 }
         cards += game.tableau.flatMap { $0 }
         return cards
+    }
+}
+
+// MARK: - 게임 조작 버튼
+
+/// 보드 아래 버튼 줄. 메뉴·단축키와 같은 GameController 메서드를 부른다.
+struct GameControlBar: View {
+    @ObservedObject var controller: GameController
+
+    var body: some View {
+        HStack(spacing: 7) {
+            ControlBarButton(title: "새 게임", symbol: "plus.rectangle.on.rectangle",
+                             help: "새 게임 (⌘N)") {
+                controller.requestNewGame()
+            }
+            .disabled(controller.preparingDeal)
+
+            ControlBarButton(title: "취소", symbol: "arrow.uturn.backward",
+                             help: "실행 취소 (⌘Z)") {
+                controller.undo()
+            }
+            .disabled(!controller.game.canUndo || controller.busy)
+
+            ControlBarButton(title: "힌트", symbol: "lightbulb",
+                             help: "힌트 (⇧⌘H)") {
+                controller.showHint()
+            }
+            .disabled(controller.busy)
+
+            Spacer(minLength: 8)
+
+            zoomGroup
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(controller.tableTheme.statusBg)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Color.white.opacity(0.10)).frame(height: 1)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("게임 조작 버튼")
+    }
+
+    private var zoomGroup: some View {
+        HStack(spacing: 2) {
+            ControlBarButton(symbol: "minus", help: "축소 (⌘−)", width: 30) {
+                controller.zoomOut()
+            }
+            .disabled(controller.preferredZoomPct <= GameController.zoomLevels.first!)
+
+            ControlBarButton(title: "\(controller.zoomPct)%", symbol: "magnifyingglass",
+                             help: "100%로 보기 (⌘0)", width: 80) {
+                controller.zoomReset()
+            }
+
+            ControlBarButton(symbol: "plus", help: "확대 (⌘=)", width: 30) {
+                controller.zoomIn()
+            }
+            .disabled(controller.preferredZoomPct >= GameController.zoomLevels.last!)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("확대 조절")
+    }
+}
+
+/// 버튼 줄에 쓰는 작은 버튼(테마 색 위에서도 읽히게 반투명 흰 바탕).
+private struct ControlBarButton: View {
+    var title: String?
+    let symbol: String
+    let help: String
+    var width: CGFloat?
+    let action: () -> Void
+
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: title == nil ? 0 : 5) {
+                Image(systemName: symbol)
+                    .font(.system(size: 11.5, weight: .semibold))
+                if let title {
+                    Text(title)
+                        .font(.system(size: 12, weight: .semibold))
+                        .lineLimit(1)
+                }
+            }
+            .foregroundStyle(Palette.controlFG.opacity(isEnabled ? 1 : 0.38))
+            .padding(.horizontal, title == nil ? 0 : 10)
+            .frame(width: width, height: 28)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.white.opacity(isEnabled ? (hovering ? 0.22 : 0.12) : 0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(Color.white.opacity(isEnabled ? 0.28 : 0.12), lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(help)
+        .accessibilityLabel(title ?? help)
+        .accessibilityHint(help)
     }
 }
 

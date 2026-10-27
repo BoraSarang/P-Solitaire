@@ -16,11 +16,13 @@ enum Metrics {
     static let faceUpDY: CGFloat = 19
     static let faceDownDY: CGFloat = 6
     static let tableauAreaH: CGFloat = 6 * faceDownDY + 12 * faceUpDY
+    /// 보드 아래 버튼 줄(새 게임·취소·힌트·확대).
+    static let controlH: CGFloat = 46
     static let statusH: CGFloat = 34
     static let wasteFan: CGFloat = 24
     static let cardRadius: CGFloat = 7
 
-    static let windowH: CGFloat = tableauY + tableauAreaH + cardH + statusH + 10
+    static let windowH: CGFloat = tableauY + tableauAreaH + cardH + controlH + statusH + 10
 
     static func windowWidth(columns: Int) -> CGFloat {
         margin * 2 + CGFloat(columns) * cardW + CGFloat(columns - 1) * gap
@@ -57,6 +59,8 @@ enum Palette {
     static let panelFG = Color(hex: "#d8f0d8")
     static let panelHead = Color(hex: "#9fd39f")
     static let hilight = Color(hex: "#ffe14d")
+    static let controlFG = Color(hex: "#f0fbf0")
+    static let controlFGDisabled = Color(hex: "#b9d9b9")
 }
 
 // MARK: - 테마(배경·카드 뒷면)

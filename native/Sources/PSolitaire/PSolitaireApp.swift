@@ -29,7 +29,7 @@ struct PSolitaireApp: App {
         .commands { GameCommands(controller: controller) }
 
         Settings {
-            SettingsView(controller: controller)
+            SettingsView(controller: controller, music: controller.music)
         }
 
         Window("전적", id: "stats") {
@@ -48,6 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        controller?.music.stop()
         controller?.saveCurrentGame()
     }
 }

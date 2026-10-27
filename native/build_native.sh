@@ -15,8 +15,8 @@ cd "$HERE" || exit 1
 
 APP_NAME="P-Solitaire"
 APP_ID="com.borasarang.P-Solitaire"
-APP_VERSION="0.5.1"
-APP_BUILD="7"
+APP_VERSION="0.6.0"
+APP_BUILD="8"
 APP_DEST="$HOME/Applications/$APP_NAME.app"
 SHOTS_DIR="$HERE/shots"
 ICON_SRC="$HERE/AppIcon.icns"
@@ -95,6 +95,13 @@ PLIST
 
     if [ -f "$ICON_SRC" ]; then
         cp "$ICON_SRC" "$APP_DEST/Contents/Resources/AppIcon.icns"
+    fi
+
+    # 배경음 5곡과 출처(CC BY 4.0). MusicPlayer 는 Contents/Resources/Music 에서 찾는다.
+    if [ -d "$HERE/Resources/Music" ]; then
+        mkdir -p "$APP_DEST/Contents/Resources/Music"
+        cp "$HERE/Resources/Music/"*.m4a "$APP_DEST/Contents/Resources/Music/"
+        cp "$HERE/Resources/Music/CREDITS.md" "$APP_DEST/Contents/Resources/Music/"
     fi
 
     # 중첩 코드가 없는 단일 실행 파일 번들이라 --deep 없이 서명한다.

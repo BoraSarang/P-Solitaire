@@ -8,7 +8,9 @@ import PSolitaireKit
 
 struct SettingsView: View {
     @ObservedObject var controller: GameController
+    @ObservedObject var music: MusicPlayer
     @State private var confirmReset = false
+    @State private var volumeDraft = MusicDefaults.volume
 
     var body: some View {
         ScrollView {
@@ -35,12 +37,65 @@ struct SettingsView: View {
                             Text("\(level)%").tag(level)
                         }
                     }
-                    Toggle("효과음", isOn: Binding(
-                        get: { controller.soundOn },
-                        set: { controller.setSound(on: $0) }))
                     Toggle("애니메이션", isOn: Binding(
                         get: { controller.animationsOn },
                         set: { controller.setAnimations(on: $0) }))
+                }
+
+                Section("소리") {
+                    Toggle("효과음", isOn: Binding(
+                        get: { controller.soundOn },
+                        set: { controller.setSound(on: $0) }))
+
+                    Toggle("배경음 사용", isOn: Binding(
+                        get: { controller.musicOn },
+                        set: { controller.setMusic(on: $0) }))
+
+                    Picker("음악", selection: Binding(
+                        get: { controller.musicTrackID },
+                        set: { controller.setMusicTrack($0) })) {
+                        ForEach(musicTracks) { track in
+                            Text(track.title).tag(track.id)
+                        }
+                    }
+                    .disabled(!controller.musicOn)
+
+                    Text(controller.musicTrack.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Picker("반복", selection: Binding(
+                        get: { controller.musicRepeatMode },
+                        set: { controller.setMusicRepeat($0) })) {
+                        ForEach(MusicRepeatMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .disabled(!controller.musicOn)
+
+                    HStack(spacing: 8) {
+                        Text("볼륨")
+                        Slider(value: $volumeDraft, in: 0...1) { editing in
+                            if !editing { controller.setMusicVolume(volumeDraft) }
+                        }
+                        .disabled(!controller.musicOn)
+                        Text("\(Int((volumeDraft * 100).rounded()))%")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                            .frame(width: 38, alignment: .trailing)
+                    }
+
+                    HStack(spacing: 6) {
+                        Image(systemName: musicSymbol)
+                            .foregroundStyle(music.isPlaying ? Color.accentColor : .secondary)
+                        Text(musicStatus)
+                            .font(.callout)
+                            .foregroundStyle(music.lastErrorCode == nil ? .secondary : Color.orange)
+                        Spacer(minLength: 8)
+                        Link("음악: Kevin MacLeod · CC BY 4.0",
+                             destination: URL(string: "https://incompetech.com/music/royalty-free/")!)
+                            .font(.caption)
+                    }
                 }
 
                 Section("게임") {
@@ -107,14 +162,39 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .padding(.horizontal, 10)
         }
-        .frame(width: 520, height: 740)
+        .frame(width: 520, height: 800)
         .navigationTitle("P-Solitaire 설정")
+        .onAppear { volumeDraft = controller.musicVolume }
+        .onChange(of: controller.musicVolume) { _, value in
+            if abs(value - volumeDraft) > 0.001 { volumeDraft = value }
+        }
+        .onChange(of: volumeDraft) { _, value in
+            controller.setMusicVolume(value, save: false)
+        }
         .alert("전적 초기화", isPresented: $confirmReset) {
             Button("취소", role: .cancel) {}
             Button("초기화", role: .destructive) { controller.resetStats() }
         } message: {
             Text("모든 게임의 판 수·승리·최고 기록을 지웁니다. 진행 중인 판과 설정은 그대로 둡니다.")
         }
+    }
+
+    private var musicSymbol: String {
+        if !controller.musicOn { return "speaker.slash" }
+        if music.lastErrorCode != nil { return "exclamationmark.triangle" }
+        return music.isPlaying ? "speaker.wave.2.fill" : "speaker.wave.2"
+    }
+
+    private var musicStatus: String {
+        if let code = music.lastErrorCode {
+            return MessageText.userMessage(code)
+        }
+        guard controller.musicOn else { return "배경음 꺼짐" }
+        if music.isPlaying, let id = music.playingTrackID,
+           let track = musicTracks.first(where: { $0.id == id }) {
+            return "재생 중: \(track.title)"
+        }
+        return "재생 대기"
     }
 }
 
