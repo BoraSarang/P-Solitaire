@@ -1,0 +1,29 @@
+# 에이전트 작업 기록 — 커밋 금지 [HARD]
+.agent/
+
+# 파이썬
+__pycache__/
+*.py[cod]
+
+# 검증 산출물(실행 중 만들어지는 그림·포스트스크립트)
+/*.ps
+/sol*.ps
+/out/
+
+# 앱 번들 빌드 산출물
+/build/
+
+# Swift 빌드 산출물(SwiftPM)
+native/.build/
+.build/
+*.dSYM/
+/native/shots/
+
+# 앱 번들
+*.app/
+
+# 동결한 파이썬 판 소스는 저장소에 올리지 않는다(로컬 보관)
+/archive/
+
+# macOS
+.DS_Store
