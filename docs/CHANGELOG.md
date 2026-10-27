@@ -15,7 +15,8 @@
   - 수정: 쉬는 카드는 그림자 없이 평평하게 그리고, 그림자는 **집은 카드·나는 카드·우승 연출에만** 준다. 하트 핍 그림자(v0.5.0)와 함께 "가만히 있는 카드에 그늘이 남는" 경로를 모두 없앴다
   - 회귀 검사: `checkRestingCardShadow`(카드 있음/빈 자리 같은 지점 색 비교) + `checkCardShadow` 에 "집은 카드만 그림자" 대조 추가. 수정 전 `#017700` vs `#007b00` 로 실패 → 수정 후 통과
 - **검증**: `swift test` **56/56** · `--selftest` **192/192** · `--shots` **46장**
-- **설치**: 아직 **v0.5.1(빌드 7)**. `build_native.sh` 를 v0.6.0(빌드 8)·음악 리소스 복사로 갱신했고, `~/Applications/P-Solitaire.app` 패키징은 **사용자 확인 뒤** 실행한다(실행 중인 앱을 종료해야 한다)
+- **설치**: `~/Applications/P-Solitaire.app` **v0.6.0(빌드 8)** 로 패키징(기존 v0.5.1 대체, 데이터 `~/.psolitaire-nat.json` 유지) · `codesign --verify --strict` 통과 · 설치본 바이너리 `--selftest` **192/192** 통과 · `Contents/Resources/Music/` 5곡+CREDITS 포함
+  - 실행 로그 `재생 Lobby Time · 목록 반복 · 볼륨 35%` 확인. 사용자가 설치본에서 곡/볼륨을 바꿔 재생(`Late Night Radio · 15%`)하고 스파이더 한 판을 완주했다
 - **문서**: `docs/ASSETS.md` 신설(음악 출처·라이선스) · DESIGN(컨트롤 바·창 620·쉬는 카드) · TODO(T-023~T-025) · README · AGENTS.local
 
 ## v0.5.1 (native, 미배포) — 2026-10-27

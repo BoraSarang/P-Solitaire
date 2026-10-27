@@ -49,7 +49,7 @@
 - 창 높이 +46px → 150% 확대 시 화면 밖으로 나갈 수 있음 → 기존 `fitZoom` 이 `Metrics.windowH` 를 쓰므로 자동 축소된다. 100% 기준 620px.
 - 음악 파일 12MB 안팎으로 번들 증가 → 96kbps AAC로 최소화, 5곡 고정.
 - 저작자 표시(CC BY 4.0) 누락 금지 → 설정·정보·CREDITS·docs 4곳에 표기.
-- 패키징은 `~/Applications/P-Solitaire.app` 를 덮어쓰므로 **사용자 확인 후** 실행한다(현재 앱 실행 중이면 먼저 종료 안내).
+- 패키징은 `~/Applications/P-Solitaire.app` 를 덮어쓰므로 **사용자 확인 후** 실행한다. 2026-10-27 사용자 승인 후 실행 완료(앱 종료 → 패키징 → codesign 검증 → 설치본 `--selftest` → `open -g`).
 
 ## 5. 완료 정의(DoD)
 - [x] 컨트롤 바 버튼 4종이 마우스로 동작하고 메뉴와 같은 결과
@@ -57,8 +57,9 @@
 - [x] `swift test` **56/56** · `--selftest` **192/192** · `--shots` **46장** 확인
 - [x] 쉬는 카드에 드래그 그림자가 남지 않음(회귀 검사 포함)
 - [x] TODO·CHANGELOG·DESIGN·README·ASSETS 갱신, 세션 로그
-- [ ] `build_native.sh package` 로 `~/Applications/P-Solitaire.app` v0.6.0(빌드 8) 설치 — **사용자 확인 대기**
-- [ ] 실제 창에서 버튼·배경음·쉬는 카드 그림자 눈/귀로 확인
+- [x] `build_native.sh package` 로 `~/Applications/P-Solitaire.app` v0.6.0(빌드 8) 설치 — codesign·`--selftest` 192/192
+- [x] 실제 창에서 버튼·배경음 확인 — 사용자가 설치본에서 곡/볼륨을 바꿔 재생하고 한 판을 완주
+- [ ] 쉬는 카드 그림자 제거 육안 피드백 확인
 
 ## 6. 결과 (2026-10-27)
 
@@ -68,4 +69,4 @@
 | 배경음 | 5곡 12.9MB · `MusicPlayer.swift` · 설정 소리 섹션 · `music` 저장/정규화 · `checkMusicSettings` |
 | 쉬는 카드 그림자 | 위 카드 그림자 제거 · `checkRestingCardShadow`(수정 전 실패 확인) · `checkCardShadow` 대조 추가 |
 | 검증 | `swift test` **56/56** · `--selftest` **192/192** · `--shots` **46장** |
-| 패키징 | `build_native.sh` v0.6.0(빌드 8) + `Resources/Music` 복사 · 설치는 사용자 확인 대기 |
+| 패키징 | `build_native.sh` v0.6.0(빌드 8) + `Resources/Music` 복사 · `~/Applications/P-Solitaire.app` 설치 완료(codesign·`--selftest` 192/192) |
