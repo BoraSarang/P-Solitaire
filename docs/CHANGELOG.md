@@ -13,6 +13,7 @@
   - 솔버는 백그라운드에서 돌고, 카드 일련번호는 여러 스레드에서 만들어도 겹치지 않게 잠금으로 보호했다
 - **검증**: `swift test` **56/56** · `--selftest` **163/163**(풀리는 판 1·2·4무늬 생성·해답 재현·다시 시작·이어하기·백그라운드 흐름 12건 추가) · `--shots` **46장**
 - **설치**: `~/Applications/P-Solitaire.app` **v0.5.1(빌드 7)** 로 패키징(기존 v0.5.0 빌드 6 대체, 데이터 `~/.psolitaire-nat.json` 유지) · `codesign --verify --strict` 통과 · 설치본 바이너리 `--selftest` **163/163** 통과
+- **저장소**: 공개 저장소 <https://github.com/BoraSarang/P-Solitaire> 신설 · 소스 반입 + 이번 기능을 **PR #1**(squash merge)로 `main`에 합쳤다. `archive/python`(동결 판)·Swift 빌드 산출물은 올리지 않는다
 - **남은 확인**: 실제 창에서 "풀리는 판을 만드는 중…" 안내·새 게임·난이도 전환을 눈으로 확인
 
 ## v0.5.0 (native) — 2026-10-20
