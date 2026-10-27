@@ -55,9 +55,12 @@ enum SelfTest {
         checkWinFlow()
         checkSettingsNormalize()
         checkThemeSwitch()
+        checkMusicSettings()
+        checkControlBar()
         checkStatsRender()
         checkRenderPixels()
         checkCardShadow()
+        checkRestingCardShadow()
 
         print("")
         if failures.isEmpty {
@@ -100,12 +103,12 @@ enum SelfTest {
             let c = controller(kind)
             let width = c.windowWidth
             expect(width == expected[kind]!, "\(kind.nameKo) 창 너비", "\(width)")
-            expect(Metrics.windowH == 574, "\(kind.nameKo) 창 높이", "\(Metrics.windowH)")
+            expect(Metrics.windowH == 620, "\(kind.nameKo) 창 높이", "\(Metrics.windowH)")
             var outside = 0
             for card in allCards(c.game) {
                 guard let spot = c.layout.point(card) else { continue }
                 if spot.x < 0 || spot.x + Metrics.cardW > width
-                    || spot.y < 0 || spot.y + Metrics.cardH > Metrics.windowH - Metrics.statusH {
+                    || spot.y < 0 || spot.y + Metrics.cardH > Metrics.windowH - Metrics.statusH - Metrics.controlH {
                     outside += 1
                 }
             }
@@ -601,6 +604,77 @@ enum SelfTest {
         expect((c.game as? Spider)?.suitFree == true, "쉬움 규칙이 판에 반영")
     }
 
+    // MARK: - 12-2. 배경음
+
+    private static func checkMusicSettings() {
+        expect(musicTracks.count == 5, "배경음 5곡", "\(musicTracks.count)")
+        expect(Set(musicTracks.map { $0.id }).count == musicTracks.count, "곡 id 중복 없음")
+        for track in musicTracks {
+            expect(MusicPlayer.url(for: track.file) != nil, "음악 파일 있음: \(track.file)")
+        }
+
+        // 깨진 설정은 기본값으로, 볼륨은 0~1로 맞춘다.
+        let broken: [String: Any] = ["music": ["on": "켬", "track": "없는 곡",
+                                               "repeat": "가끔", "volume": 3.0]]
+        let fixed = GameController.normalize(broken)
+        let music = fixed["music"] as? [String: Any] ?? [:]
+        expect(music["on"] as? Bool == MusicDefaults.on, "이상한 배경음 → 기본 켬")
+        expect(music["track"] as? String == MusicDefaults.trackID, "없는 곡 → 첫 곡")
+        expect(music["repeat"] as? String == MusicRepeatMode.all.rawValue,
+               "이상한 반복 → 목록 반복")
+        expect((music["volume"] as? NSNumber)?.doubleValue == 1.0, "볼륨 상한 1.0")
+        let low = GameController.normalize(["music": ["volume": -2.0]])
+        expect(((low["music"] as? [String: Any])?["volume"] as? NSNumber)?.doubleValue == 0,
+               "볼륨 하한 0")
+
+        // 저장 → 읽기 왕복
+        let c = controller(.klondike)
+        c.setMusicTrack("bossa_bossa")
+        c.setMusicRepeat(.one)
+        c.setMusicVolume(0.5)
+        c.setMusic(on: false)
+        c.save()
+        let again = GameController()
+        expect(again.musicTrackID == "bossa_bossa", "배경음 곡 저장됨", again.musicTrackID)
+        expect(again.musicRepeatMode == .one, "배경음 반복 저장됨")
+        expect(abs(again.musicVolume - 0.5) < 0.001, "배경음 볼륨 저장됨")
+        expect(!again.musicOn, "배경음 끔 저장됨")
+
+        // 목록 반복으로 다음 곡이 시작되면 선택값도 따라간다.
+        again.musicDidAdvance(to: "night_in_venice")
+        expect(again.musicTrackID == "night_in_venice", "목록 반복이 곡 선택을 따라감")
+        again.setMusic(on: true)
+        expect(!again.music.isPlaying, "자체 검사에서는 소리를 내지 않음")
+        expect(MusicPlayer.isSuppressed, "검사 모드 소리 억제")
+    }
+
+    // MARK: - 12-3. 화면 조작 버튼
+
+    private static func checkControlBar() {
+        let c = controller(.klondike)
+        guard let image = renderControlBar(c) else {
+            expect(false, "조작 버튼 줄 렌더")
+            return
+        }
+        expect(image.width == Int(c.windowWidth) * 2, "조작 버튼 줄 너비", "\(image.width)")
+        expect(image.height == Int(Metrics.controlH) * 2, "조작 버튼 줄 높이",
+               "\(image.height)")
+
+        // 버튼이 부르는 메서드가 메뉴와 같은 경로로 동작하는지 확인한다.
+        let oldSeed = c.game.seed
+        c.requestNewGame()                    // 이동 0 → 확인 없이 바로 새 판
+        expect(c.game.seed != oldSeed, "새 게임 버튼 → 새 배분", "\(c.game.seed)")
+        expect(c.game.moves == 0, "새 게임은 이동 0에서 시작")
+        expect(!c.game.canUndo, "새 판은 취소할 수 없음")
+        expect(c.statusRight == hintTextDefault, "새 게임 뒤 기본 안내", c.statusRight)
+        c.showHint()                          // 힌트 버튼 경로(대화상자/깜빡임)
+        c.setZoom(100)
+        c.zoomIn()
+        expect(c.preferredZoomPct == 125, "확대 버튼 → 다음 배율", "\(c.preferredZoomPct)")
+        c.zoomReset()
+        expect(c.preferredZoomPct == 100, "100% 버튼 → 100%")
+    }
+
     // MARK: - 13. 전적 창 렌더
 
     private static let sampleRecords = [
@@ -628,7 +702,7 @@ enum SelfTest {
                 c.setTheme(background: background)
                 c.redraw()
                 guard let image = render(c, width: c.windowWidth,
-                                         height: Metrics.windowH - Metrics.statusH) else {
+                                         height: Metrics.windowH - Metrics.statusH - Metrics.controlH) else {
                     expect(false, "\(kind.nameKo)/\(background) 렌더"); continue
                 }
                 expect(image.width == Int(c.windowWidth) * 2 || image.width == Int(c.windowWidth),
@@ -659,11 +733,18 @@ enum SelfTest {
         guard let origin = c.layout.point(card) else {
             expect(false, "카드 그림자 준비"); return
         }
+        let boardH = Metrics.windowH - Metrics.statusH - Metrics.controlH
+        let outside = CGPoint(x: origin.x + Metrics.cardW + 2,
+                              y: origin.y + Metrics.cardH / 2)
+        guard let resting = render(c, width: c.windowWidth, height: boardH) else {
+            expect(false, "카드 그림자 렌더(쉼)"); return
+        }
+        let restHex = pixelHex(color(of: resting, at: outside))
+
         let point = CGPoint(x: origin.x + 10, y: origin.y + 10)
         c.press(at: point)
         c.dragTo(point)                         // 집은 카드(강한 그림자) 상태
-        guard let image = render(c, width: c.windowWidth,
-                                 height: Metrics.windowH - Metrics.statusH) else {
+        guard let image = render(c, width: c.windowWidth, height: boardH) else {
             expect(false, "카드 그림자 렌더"); return
         }
         // 3♥의 맨 위 핍 바로 위, 카드 안쪽 흰 영역.
@@ -671,6 +752,41 @@ enum SelfTest {
         let hex = pixelHex(color(of: image, at: sample))
         expect(colorsClose(hex, "#ffffff", tolerance: 4),
                "카드 그림자가 핍 안쪽을 어둡게 하지 않음", hex)
+        // 집은 카드는 바깥에 그림자를 남기고, 쉬는 카드보다 확실히 어둡다.
+        let dragHex = pixelHex(color(of: image, at: outside))
+        expect(!colorsClose(dragHex, restHex, tolerance: 2),
+               "집은 카드만 그림자로 띄워 보임", "집음 \(dragHex) · 쉼 \(restHex)")
+    }
+
+    /// 드래그하지 않은 카드는 그림자를 두르지 않는다.
+    /// (위 카드에 늘 옅은 그림자가 생겨, 집지 않았는데도 집은 것처럼 보였다.)
+    private static func checkRestingCardShadow() {
+        let c = controller(.klondike)
+        c.clearBoard()
+        c.setTheme(background: "green")
+        let card = Card(rank: 2, suit: .spades, faceup: true)
+        c.game.tableau[0] = [card]
+        c.redraw()
+        guard let origin = c.layout.point(card) else {
+            expect(false, "쉬는 카드 그림자 준비"); return
+        }
+        let boardH = Metrics.windowH - Metrics.statusH - Metrics.controlH
+        // 카드 아래 4px 지점. 카드가 있으면 그림자가, 없으면 탁자색만 보여야 한다.
+        let sample = CGPoint(x: origin.x + Metrics.cardW / 2,
+                             y: origin.y + Metrics.cardH + 4)
+        guard let withCard = render(c, width: c.windowWidth, height: boardH) else {
+            expect(false, "쉬는 카드 그림자 렌더"); return
+        }
+        let lifted = pixelHex(color(of: withCard, at: sample))
+
+        c.game.tableau[0] = []
+        c.redraw()
+        guard let without = render(c, width: c.windowWidth, height: boardH) else {
+            expect(false, "빈 자리 그림자 렌더"); return
+        }
+        let flat = pixelHex(color(of: without, at: sample))
+        expect(colorsClose(lifted, flat, tolerance: 2),
+               "쉬는 카드는 그림자를 만들지 않음", "카드 \(lifted) · 빈 자리 \(flat)")
     }
 
     // MARK: - 그림 그리기(창 없이)
@@ -694,12 +810,23 @@ enum SelfTest {
         return renderer.cgImage
     }
 
+    /// 보드 아래 조작 버튼 줄을 창 없이 그린다.
+    static func renderControlBar(_ controller: GameController) -> CGImage? {
+        let view = GameControlBar(controller: controller)
+            .frame(width: controller.windowWidth, height: Metrics.controlH)
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 2
+        return renderer.cgImage
+    }
+
     /// 상태바까지 포함한 실제 창 내용 전체를 그린다.
     static func renderWindow(_ controller: GameController) -> CGImage? {
         let view = VStack(spacing: 0) {
             BoardCanvas(controller: controller)
                 .frame(width: controller.windowWidth,
-                       height: controller.windowHeight - Metrics.statusH)
+                       height: controller.windowHeight - Metrics.controlH - Metrics.statusH)
+            GameControlBar(controller: controller)
+                .frame(height: Metrics.controlH)
             StatusBarView(controller: controller)
                 .frame(height: Metrics.statusH)
         }
@@ -714,7 +841,9 @@ enum SelfTest {
         let view = VStack(spacing: 0) {
             BoardCanvas(controller: controller)
                 .frame(width: controller.windowWidth,
-                       height: controller.windowHeight - Metrics.statusH)
+                       height: controller.windowHeight - Metrics.controlH - Metrics.statusH)
+            GameControlBar(controller: controller)
+                .frame(height: Metrics.controlH)
             StatusBarView(controller: controller)
                 .frame(height: Metrics.statusH)
         }
@@ -781,7 +910,7 @@ enum SelfTest {
                     c.setTheme(background: background, back: back)
                     c.redraw()
                     guard let image = render(c, width: c.windowWidth,
-                                             height: Metrics.windowH - Metrics.statusH),
+                                             height: Metrics.windowH - Metrics.statusH - Metrics.controlH),
                           let data = pngData(image) else { continue }
                     let name = "\(kind.rawValue)-\(background)-\(back).png"
                     try? data.write(to: URL(fileURLWithPath: folder + "/" + name))

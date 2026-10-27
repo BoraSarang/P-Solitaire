@@ -19,9 +19,10 @@ P-Solitaire 는 **외부 서버·네트워크·API 를 쓰지 않는다**(전부
   - `Spider.startLayout` / `SpiderStartLayout` — 다시 시작·이어하기 때 같은 배분을 유지한다(저장 파일 `spiderStart`)
   - 앱 설정 키 `spider_winnable`(기본 `true`). 만드는 동안 `GameController.preparingDeal`이 켜져 화면이 안내로 덮인다
 - **화면/상태**: `native/Sources/PSolitaire/GameController.swift` — 게임 상태, 저장/복원, 줌, 사운드/애니메이션, 대화상자 요청, 통계 집계(`played`는 첫 실제 이동 때만)
-- **그리기/배치**: `Board.swift`(1x 논리 좌표·히트테스트), `Drawing.swift`(카드/무늬/뒷면/그림자), `Theme.swift`(치수·테마)
-  - `drawCardFaceShadow`는 **카드 실루엣에만** 그림자를 준다. 카드 앞면 전체를 그림자 레이어에 넣으면 핍마다 그림자가 생기므로, 실루엣을 먼저 깔고 앞면을 위에 그린다.
-- **창/메뉴**: `PSolitaireApp.swift`(WindowGroup·Settings·전적 Window·메뉴/단축키), `SettingsViews.swift`
+- **그리기/배치**: `Board.swift`(1x 논리 좌표·히트테스트), `Drawing.swift`(카드/무늬/뒷면), `Theme.swift`(치수·테마), `Views.swift`(`BoardCanvas`·`GameControlBar`)
+  - `drawCardFaceShadow`는 **집은/나는/우승 카드에만** 쓴다. 그림자는 카드 실루엣에만 주고(앞면 전체를 넣으면 핍마다 그림자가 생긴다), 쉬는 카드는 `drawCardFace`로 평평하게 그린다(집지 않았는데 집은 것처럼 보이던 둥근 그늘 제거).
+- **배경음**: `MusicPlayer.swift` — `musicTracks`(5곡), `MusicRepeatMode`, `apply(on:trackID:repeatMode:volume:)`, `url(for:)`. 설정은 `GameController`가 `music` 키로 저장·정규화하고, `--selftest`/`--shots`에서는 무음.
+- **창/메뉴**: `PSolitaireApp.swift`(WindowGroup·Settings·전적 Window·메뉴/단축키), `SettingsViews.swift`(테마·소리·게임·자동·데이터)
 - **앱 정체성(v0.5.0)**: `~/Applications/P-Solitaire.app` · 번들 ID `com.borasarang.P-Solitaire` · 실행 파일 `P-Solitaire` · 로그 `~/Library/Logs/P-Solitaire.log`
 - **검증**: `swift test`(Kit) · `swift run PSolitaire --selftest`(창 없이 UI 계층) · `--shots`(오프스크린 PNG)
 
