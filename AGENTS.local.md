@@ -64,5 +64,5 @@ swift test                   # 규칙 테스트만
 
 ## 7. 다음 작업
 - **v0.6.0 완료·설치** — 화면 버튼(T-023) · 배경음(T-024) · 쉬는 카드 그림자 제거(T-025) · 규칙 56/56 · 화면 192/192 · PNG 46장 · `~/Applications/P-Solitaire.app` v0.6.0(빌드 8).
-- **남은 일**: PR #3 squash 머지 · 쉬는 카드 그림자 제거 육안 피드백 확인 · 새 요청은 `docs/TODO.md`에 추가.
+- **남은 일**: 쉬는 카드 그림자 제거 육안 피드백 확인 · 새 요청은 `docs/TODO.md`에 추가. PR #3은 squash 머지 완료(`main` 4fdb633).
 - 이전 `P-Solitaire Native.app`(v0.4.2)는 Applications에서 제거해 Trash에 보관했다. 실행 중인 앱이 있으면 자동 종료/포커스 이동 금지.

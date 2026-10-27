@@ -5,9 +5,9 @@
 ## ⓪ 다음 세션 시작점 (2026-10-27 v0.6.0 기준)
 - **활성 트랙**: **Swift 네이티브만** (`native/`) — **v0.6.0(빌드 8)** 작업 트리·설치본 · `swift test` **56/56** · `--selftest` **192/192** · `--shots` **46장**.
 - **동결**: 파이썬 **v0.2.6(빌드 26)** — 소스는 `archive/python/`, 설치 번들은 `~/.Trash/P-Solitaire.app`에 보존. **더 이상 수정·패키징·이동 금지**. 네이티브와 같은 번들 ID이므로 복원/동시 실행 금지.
-- **이번에 끝난 일**: T-023 **게임 화면 버튼**(새 게임·취소·힌트·확대) + T-024 **배경음 5곡과 소리 설정** + T-025 **쉬는 카드의 드래그 그림자 제거**(집지 않았는데 집은 것처럼 보이던 둥근 그늘) + **v0.6.0(빌드 8) 설치**
+- **이번에 끝난 일**: T-023 **게임 화면 버튼**(새 게임·취소·힌트·확대) + T-024 **배경음 5곡과 소리 설정** + T-025 **쉬는 카드의 드래그 그림자 제거**(집지 않았는데 집은 것처럼 보이던 둥근 그늘) + **v0.6.0(빌드 8) 설치** + **PR #3 squash 머지**
 - **저장소**: <https://github.com/BoraSarang/P-Solitaire> — `main`이 기준. 다음 세션은 이 저장소를 clone/`git pull` 해서 시작하면 된다(로컬 작업 폴더와 같은 내용). `archive/python`은 로컬에만 있다
-- **바로 할 일**: ① PR #3(`feat/v0.6-buttons-music`) **squash 머지** ② 쉬는 카드 그림자 제거 육안 피드백 확인 ③ 새 요청 받기
+- **바로 할 일**: ① 쉬는 카드 그림자 제거 육안 피드백 확인 ② 새 요청 받기 (PR #3은 squash 머지 완료)
 - **검증 명령**: `cd native && ./build_native.sh test` · `./build_native.sh shots` (창 없이) · 패키징 `./build_native.sh package`(`~/Applications/P-Solitaire.app` 덮어씀 — 실행 중이면 먼저 알린다)
 - **이름·ID**: 설치본 `~/Applications/P-Solitaire.app` · 번들 ID `com.borasarang.P-Solitaire` · 로그 `~/Library/Logs/P-Solitaire.log`. 데이터는 `~/.psolitaire-nat.json` 그대로.
 
