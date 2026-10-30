@@ -15,7 +15,7 @@
   - `swift test` **64/64** — 힌트를 실제로 두어 승리 확인(FreeCell·Klondike·한 수 둔 뒤 재탐색), 풀 수 없는 판(`.impossible`), 풀리는 판 계획 힌트가 해답과 같은지, 예산 상한
   - `--selftest` **200/200** — 풀리는 판 흐름에서 "힌트 = 해답 첫 수", "한 수 뒤 힌트 = 해답 다음 수", 실제 화면 경로(비동기 탐색 → "찾는 중" → 카드 깜빡임 → 판이 바뀌면 결과 버림)
   - 릴리스 빌드 측정: FreeCell 1~20번 **20/20 해결**(최대 0.41초) · Klondike 1장 넘기기 8/10 · 3장 넘기기 5/10 · Spider 1무늬 8/10(실패는 모두 `.unknown`, 거짓 단정 없음)
-- **설치**: `~/Applications/P-Solitaire.app` **v0.7.0(빌드 9)** 로 패키징(사용자 승인, 기존 v0.6.0 대체, 데이터 `~/.psolitaire-nat.json` 유지) · `codesign --verify --strict` 통과 · 설치본 바이너리 `--selftest` **200/200** · PR #6
+- **설치·배포**: `~/Applications/P-Solitaire.app` **v0.7.0(빌드 9)** 로 패키징(사용자 승인, 기존 v0.6.0 대체, 데이터 `~/.psolitaire-nat.json` 유지) · `codesign --verify --strict` 통과 · 설치본 바이너리 `--selftest` **200/200** · **PR #6 squash 머지 완료**(`000187c`, 2026-10-30) · `feat/hint-solver` 브랜치 정리
 
 ## v0.6.0 (native) — 2026-10-27
 - **게임 화면 버튼** — 보드와 상태바 사이에 **46px 컨트롤 바**를 두고 `새 게임 · 취소 · 힌트 · −/배율/+`를 마우스로 바로 누른다. 메뉴·단축키와 같은 `GameController` 메서드를 써서 확인 대화상자·비활성 조건이 같다

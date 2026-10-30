@@ -63,6 +63,6 @@ swift test                   # 규칙 테스트만
 - 배경 3종(클래식 초록·파란 탁자·어두운 탁자) × 카드 뒷면 3종(푸른 격자·붉은 햇살·청록 물방울) — 조합은 자유.
 
 ## 7. 다음 작업
-- **v0.6.0 완료·설치** — 화면 버튼(T-023) · 배경음(T-024) · 쉬는 카드 그림자 제거(T-025) · 규칙 56/56 · 화면 192/192 · PNG 46장 · `~/Applications/P-Solitaire.app` v0.6.0(빌드 8).
-- **남은 일**: 쉬는 카드 그림자 제거 육안 피드백 확인 · 새 요청은 `docs/TODO.md`에 추가. PR #3은 squash 머지 완료(`main` 4fdb633).
+- **v0.7.0 완료·설치·머지** — 힌트 해답 탐색기(T-026) · `swift test` 64/64 · `--selftest` 200/200 · PNG 46장 · `~/Applications/P-Solitaire.app` v0.7.0(빌드 9) · PR #6 squash 머지 완료(`main` 000187c).
+- **남은 일**: 실제 창에서 힌트 체감 확인(사용자 미확인) · Spider 2·4무늬 힌트·Klondike 3장 넘기기 해결률 개선 여지 · 새 요청은 `docs/TODO.md`에 추가. 이전 PR #3은 squash 머지 완료(`main` 4fdb633).
 - 이전 `P-Solitaire Native.app`(v0.4.2)는 Applications에서 제거해 Trash에 보관했다. 실행 중인 앱이 있으면 자동 종료/포커스 이동 금지.
