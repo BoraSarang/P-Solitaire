@@ -15,8 +15,8 @@ cd "$HERE" || exit 1
 
 APP_NAME="P-Solitaire"
 APP_ID="com.borasarang.P-Solitaire"
-APP_VERSION="0.6.0"
-APP_BUILD="8"
+APP_VERSION="0.7.0"
+APP_BUILD="9"
 APP_DEST="$HOME/Applications/$APP_NAME.app"
 SHOTS_DIR="$HERE/shots"
 ICON_SRC="$HERE/AppIcon.icns"

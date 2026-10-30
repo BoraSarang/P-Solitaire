@@ -11,7 +11,7 @@ import Foundation
 // MARK: - 공개 결과
 
 /// 풀리는 판의 해답 한 수(앱에서는 검증·힌트에 쓸 수 있다).
-public enum SpiderSolutionMove: Sendable, Equatable {
+public enum SpiderSolutionMove: Sendable, Equatable, Codable {
     case move(src: Int, index: Int, dst: Int)
     case deal
 }
@@ -585,5 +585,6 @@ public extension Spider {
         moves = 0
         clearUndo()
         captureStartLayout()
+        startLayout?.solution = deal.solution
     }
 }

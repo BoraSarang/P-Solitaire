@@ -2,12 +2,12 @@
 > 위치: /Users/lee/Documents/Apps/P-Solitaire/AGENTS.local.md
 > 공통 가이드(~/.config/opencode/AGENTS.md, rules/*)는 재작성하지 않는다. 이 프로젝트에서 **달라지는 것만** 기록한다.
 
-## 0. 현재 방향 (2026-10-27)
+## 0. 현재 방향 (2026-10-30)
 - **활성 트랙: Swift 네이티브만** — `native/` · Swift 6 + SwiftUI `Canvas` + SwiftPM · macOS 14+ · 외부 런타임 의존 없음.
 - **파이썬 판은 동결/아카이브**: v0.2.6(빌드 26) · 소스는 `archive/python/` · 설치 번들은 현재 `~/.Trash/P-Solitaire.app`에 기록 보존용으로 있다(이번 작업에서 이동·수정하지 않음).
   - **금지**: `archive/python/` 소스 수정, 버전 올리기, `build_and_run.sh package`(동결 설치본을 덮어쓴다).
   - 참고 검증만 허용: `cd archive/python && ./build_and_run.sh test game unit` (코어 51 + UI 94).
-- 네이티브 설치본: `~/Applications/P-Solitaire.app` — 설치 **v0.6.0(빌드 8)** · 작업 트리와 동일 · 번들 ID `com.borasarang.P-Solitaire` · 실행 파일 `P-Solitaire`.
+- 네이티브 설치본: `~/Applications/P-Solitaire.app` — 설치 **v0.7.0(빌드 9)** · 작업 트리와 동일 · 번들 ID `com.borasarang.P-Solitaire` · 실행 파일 `P-Solitaire`.
 - **저장소**: <https://github.com/BoraSarang/P-Solitaire> (공개) · 기본 브랜치 `main` · 작업은 브랜치 + PR(squash)로 합친다 · `archive/`·`.build/`·`native/shots/`는 올리지 않는다.
 - 설정·전적: `~/.psolitaire-nat.json` · 로그: `~/Library/Logs/P-Solitaire.log`.
 - **최종 이름 교체 완료(T-021)**: `P-Solitaire Native` → `P-Solitaire`. 이전 v0.4.2 앱은 Applications에서 제거해 `~/.Trash/P-Solitaire Native (v0.4.2 235240).app`에 보관했다. Applications에는 `P-Solitaire.app`만 있다.
@@ -18,7 +18,7 @@
 - **게임**: 클론다이크 · 프리셀 · 스파이더(1·2·4무늬) — 규칙은 `native/Sources/PSolitaireKit`에만
 - **design_profile**: custom — 클래식 MS 솔리테어 룩(초록 탁자·도형 카드) · 토큰은 `docs/DESIGN.md`·`native/Sources/PSolitaire/Theme.swift`
 - **작업 모드 기본값**: 정식
-- **현재 상태**: 작업 트리·설치본 v0.6.0(빌드 8) · `swift test` **56/56** · `--selftest` **192/192** · `--shots` **46장**
+- **현재 상태**: 작업 트리·설치본 v0.7.0(빌드 9) · `swift test` **64/64** · `--selftest` **200/200** · `--shots` **46장**
 - **문서**: `docs/TODO.md`(다음 일) · `docs/plans/PLAN_v0.6_native_game.md`(화면 버튼·배경음) · `docs/plans/PLAN_v0.3_native_game.md`(계획/이력) · `docs/plans/NATIVE_REVIEW_2026-10-20.md`(개선 제안) · `docs/ASSETS.md`(음악 출처·라이선스)
 
 ## 2. 빌드·검증 (native)

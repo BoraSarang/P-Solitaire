@@ -25,12 +25,16 @@ public struct SpiderStartLayout: Codable, Sendable {
     public var suits: Int
     public var tableau: [[PackedCard]]
     public var stock: [PackedCard]
+    /// 풀리는 판으로 배분했다면 그때 찾은 해답(힌트용). 일반 배분은 nil.
+    public var solution: [SpiderSolutionMove]?
 
-    public init(seed: Int, suits: Int, tableau: [[PackedCard]], stock: [PackedCard]) {
+    public init(seed: Int, suits: Int, tableau: [[PackedCard]], stock: [PackedCard],
+                solution: [SpiderSolutionMove]? = nil) {
         self.seed = seed
         self.suits = suits
         self.tableau = tableau
         self.stock = stock
+        self.solution = solution
     }
 }
 
@@ -282,6 +286,66 @@ public final class Spider: BaseGame {
         }
         guard let best else { return nil }
         return move(ref, index: index, Ref(.tableau, best))
+    }
+
+    /// 풀리는 판으로 시작했다면 배분할 때 찾아 둔 해답을 그대로 안내한다.
+    ///
+    /// 해답 경로 위에 있는 판이면 다음 수가 곧 이기는 수다. 플레이어가 해답에서
+    /// 벗어났으면 nil 을 돌려주고, 호출 쪽이 탐색기(`searchHint`)로 넘어간다.
+    public func planHint() -> Hint? {
+        guard let layout = startLayout, let solution = layout.solution, !solution.isEmpty else {
+            return nil
+        }
+        let probe = Spider(seed: layout.seed, suits: layout.suits)
+        probe.tableau = layout.tableau.map(unpackPile)
+        probe.stock = layout.stock.map { Card(rank: $0.rank, suit: $0.suit, faceup: false) }
+        probe.foundations = []
+        probe.freecells = []
+        probe.waste = []
+
+        if sameBoard(as: probe) { return planHint(for: solution[0]) }
+        for (i, move) in solution.enumerated() {
+            let ok: Bool
+            switch move {
+            case .deal:
+                ok = probe.drawFromStock().ok
+            case .move(let src, let index, let dst):
+                ok = probe.move(Ref(.tableau, src), index: index, Ref(.tableau, dst)).ok
+            }
+            guard ok else { return nil }
+            if sameBoard(as: probe) {
+                return i + 1 < solution.count ? planHint(for: solution[i + 1]) : nil
+            }
+        }
+        return nil
+    }
+
+    private func sameBoard(as other: Spider) -> Bool {
+        guard stock.count == other.stock.count,
+              foundations.count == other.foundations.count,
+              tableau.count == other.tableau.count else { return false }
+        for i in tableau.indices where !samePile(tableau[i], other.tableau[i]) { return false }
+        return samePile(stock, other.stock)
+    }
+
+    private func samePile(_ a: [Card], _ b: [Card]) -> Bool {
+        guard a.count == b.count else { return false }
+        for i in a.indices where a[i].rank != b[i].rank || a[i].suit != b[i].suit
+            || a[i].faceup != b[i].faceup {
+            return false
+        }
+        return true
+    }
+
+    private func planHint(for move: SpiderSolutionMove) -> Hint? {
+        switch move {
+        case .deal:
+            return stock.isEmpty ? nil : .draw
+        case .move(let src, let index, let dst):
+            guard src < tableau.count, dst < tableau.count,
+                  index >= 0, index < tableau[src].count else { return nil }
+            return .move(src: Ref(.tableau, src), index: index, dst: Ref(.tableau, dst))
+        }
     }
 
     public override func hint() -> Hint? {
