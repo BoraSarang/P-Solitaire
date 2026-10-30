@@ -9,7 +9,7 @@ import Foundation
 protocol GameState {}
 
 /// 뒤집힘 여부까지 담은 카드 한 장(스냅숏·저장 파일용).
-public struct PackedCard: Codable, Sendable {
+public struct PackedCard: Codable, Sendable, Equatable {
     public let rank: Int
     public let suit: Suit
     public let faceup: Bool
@@ -25,7 +25,7 @@ public struct PackedCard: Codable, Sendable {
 ///
 /// 게임별 내부 상태(스냅숏 구조체)와 달리 카드 배열·점수·이동 수·시드만 담는다.
 /// 클론다이크의 넘기기 장수, 스파이더의 무늬 수·묶음 규칙은 앱이 따로 저장한다.
-public struct GameSnapshot: Codable, Sendable {
+public struct GameSnapshot: Codable, Sendable, Equatable {
     public var version: Int
     public var seed: Int
     public var score: Int
@@ -281,6 +281,29 @@ public class BaseGame {
     public func hint() -> Hint? { nil }
     public func findFoundationMove() -> (src: Ref, index: Int, dst: Ref)? { nil }
     public func canAutoComplete() -> Bool { false }
+
+    /// 현재 판에서 이기는 해답을 찾는다(힌트용).
+    ///
+    /// `hint()` 는 "당장 둘 수 있는 한 수"만 고르는 빠른 휴리스틱이라
+    /// 왕복 수를 반복할 수 있다. 이 메서드는 판 전체를 탐색해 이기는 줄의
+    /// 첫 수를 돌려주고, 탐색을 끝까지 마쳤는데 해답이 없으면 `.impossible`,
+    /// 시간·노드 한도에 걸리면 `.unknown` 을 돌려준다.
+    ///
+    /// 예산을 생략하면 게임별 기본값(`HintSolver.budget`)을 쓴다.
+    public func searchHint(timeLimit: TimeInterval? = nil,
+                           nodeLimit: Int? = nil) -> HintSearchResult {
+        let drawCount = (self as? Klondike)?.drawCount ?? 3
+        let spider = self as? Spider
+        let suits = spider?.suits ?? 1
+        let suitFree = spider?.suitFree ?? false
+        // 풀리는 판으로 시작했고 해답 경로 위에 있으면 탐색 없이 바로 안내한다.
+        if let planned = spider?.planHint() { return .solved([planned]) }
+        let budget = HintSolver.budget(for: kind)
+        return HintSolver.solve(kind: kind, snapshot: exportSnapshot(),
+                                drawCount: drawCount, suits: suits, suitFree: suitFree,
+                                timeLimit: timeLimit ?? budget.time,
+                                nodeLimit: nodeLimit ?? budget.nodes)
+    }
 
     /// 자동 완성 한 단계: 파운데이션에 올릴 수 있는 카드 하나를 옮긴다.
     public func autocompleteStep() -> MoveResult? {

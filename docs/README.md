@@ -7,7 +7,7 @@
 |---|---|---|
 | [`TODO.md`](TODO.md) | **세션 시작** | 남은 일 한 곳(⓪ 시작점 · ① 진행 중 · ② 완료 · ③ Perf · ④ 보류) — 다음 세션은 이것만 보면 된다 |
 | [`plans/NATIVE_REVIEW_2026-10-20.md`](plans/NATIVE_REVIEW_2026-10-20.md) | **네이티브 개선 이력** | 점검 시점의 P0~P2 제안 + v0.4.0~v0.5.1 구현 결과 |
-| [`CHANGELOG.md`](CHANGELOG.md) | 지금까지 무엇이 바뀌었나 | 버전별 변경 기록(v0.1 → v0.2.6 파이썬 동결 → **v0.6.0 네이티브**) |
+| [`CHANGELOG.md`](CHANGELOG.md) | 지금까지 무엇이 바뀌었나 | 버전별 변경 기록(v0.1 → v0.2.6 파이썬 동결 → **v0.7.0 네이티브**) |
 | [`DESIGN.md`](DESIGN.md) | 화면·토큰을 고칠 때 | 색·폰트·간격 토큰, 카드 도형, 화면 구성(컨트롤 바·창 620), 앱 번들/메뉴 막대, 접근성 |
 | [`ASSETS.md`](ASSETS.md) | 외부 리소스를 쓸 때 | 배경음 5곡의 출처·라이선스(CC BY 4.0)·저작자 표시, 아이콘·도형의 자체 제작 여부 |
 | [`api/README.md`](api/README.md) | 코어·화면을 고칠 때 | 파이썬 API 요약(동결) + Swift 네이티브 API 지도 — 상세는 `native/Sources/PSolitaireKit` 소스 |

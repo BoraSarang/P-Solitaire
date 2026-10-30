@@ -102,7 +102,7 @@ public struct MoveResult {
     }
 }
 
-public enum Hint: Equatable {
+public enum Hint: Equatable, Sendable {
     case move(src: Ref, index: Int, dst: Ref)
     case draw
     case recycle

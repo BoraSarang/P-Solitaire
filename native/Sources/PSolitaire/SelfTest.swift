@@ -49,6 +49,7 @@ enum SelfTest {
         checkSeedEntry()
         checkConfirmDiscard()
         checkNoMoveHint()
+        checkHintSearch()
         checkAutoCollect()
         checkDoubleClick()
         checkAutoCompleteGate()
@@ -278,6 +279,16 @@ enum SelfTest {
         }
     }
 
+    /// 해답 한 수를 화면 힌트로 바꾼다(힌트가 해답 그대로인지 비교할 때 쓴다).
+    private static func solutionHint(_ move: SpiderSolutionMove) -> Hint? {
+        switch move {
+        case .deal:
+            return .draw
+        case .move(let src, let index, let dst):
+            return .move(src: Ref(.tableau, src), index: index, dst: Ref(.tableau, dst))
+        }
+    }
+
     /// 새 게임 흐름: 백그라운드에서 풀리는 판을 만들고 화면 상태가 풀리는지.
     private static func checkWinnableGameFlow() {
         let settings: [String: Any] = ["variant": GameKind.klondike.rawValue,
@@ -311,6 +322,24 @@ enum SelfTest {
         expect(now == start, "풀리는 판 흐름: 시작 배치와 현재 배치가 같음")
         expect(spider.tableau.map(\.count) == [6, 6, 6, 6, 5, 5, 5, 5, 5, 5],
                "풀리는 판 흐름: 표준 배분")
+
+        // 배분할 때 찾은 해답이 시작 배치에 남고, 힌트가 그 첫 수를 그대로 안내한다.
+        guard let solution = spider.startLayout?.solution, !solution.isEmpty else {
+            expect(false, "풀리는 판 흐름: 해답 기억"); return
+        }
+        expect(spider.planHint() == solutionHint(solution[0]),
+               "풀리는 판 흐름: 힌트 = 해답 첫 수")
+        switch solution[0] {
+        case .deal:
+            _ = spider.drawFromStock()
+        case .move(let src, let index, let dst):
+            _ = spider.move(Ref(.tableau, src), index: index, Ref(.tableau, dst))
+        }
+        if solution.count > 1 {
+            expect(spider.planHint() == solutionHint(solution[1]),
+                   "풀리는 판 흐름: 한 수 뒤 힌트 = 해답 다음 수")
+        }
+        spider.restart()
 
         // 이어하기: 풀리는 판의 시작 배치까지 파일에 남아 다시 시작해도 유지된다.
         c.saveCurrentGame()
@@ -462,6 +491,29 @@ enum SelfTest {
         c.afterMove()
         expect(c.statusRight.contains("둘 수 있는 수가 없습니다"),
                "둘 수 있는 수 없음 안내", c.statusRight)
+    }
+
+    // MARK: - 6-1. 해답 힌트(비동기)
+
+    /// 힌트는 백그라운드에서 해답을 찾고, 결과가 돌아오면 카드·자리를 깜빡인다.
+    private static func checkHintSearch() {
+        let c = controller(.freecell)
+        c.switchGame(.freecell, seed: 3)          // 해답을 빨리 찾는 판
+        expect(c.game.seed == 3, "힌트 탐색: 판 고정", "\(c.game.seed)")
+        c.showHint()
+        expect(c.statusRight.contains("찾는 중"), "힌트 탐색: 찾는 중 안내", c.statusRight)
+        let deadline = Date().addingTimeInterval(30)
+        while c.flashCards.isEmpty && c.alert == nil && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
+        expect(c.alert == nil, "힌트 탐색: 해답을 찾음")
+        expect(!c.flashCards.isEmpty, "힌트 탐색: 카드 깜빡임")
+        expect(c.statusRight.contains("첫 수"), "힌트 탐색: 해답 안내", c.statusRight)
+
+        // 판이 바뀌면 진행 중이던 탐색 결과는 버린다.
+        c.showHint()
+        c.switchGame(.klondike)
+        expect(c.statusRight == hintTextDefault, "힌트 탐색: 판이 바뀌면 안내 해제", c.statusRight)
     }
 
     // MARK: - 7. 자동 올리기

@@ -128,6 +128,10 @@ final class GameController: ObservableObject {
     private var noticeCode: String?
     private var noticeUntil = Date.distantPast
     private var hintTimer: Timer?
+    /// 이기는 해답을 찾는 중인가(같은 힌트를 두 번 돌리지 않는다).
+    private var hintSearching = false
+    /// 힌트 탐색 결과가 지금 판의 것인지 가리는 표식.
+    private var hintSearchToken = UUID()
     private var tickTimer: Timer?
     private var autocompleteTimer: Timer?
     private var bounceTimer: Timer?
@@ -803,6 +807,7 @@ final class GameController: ObservableObject {
         lastClick = (nil, .distantPast)
         busy = false
         autocompleting = false
+        if hintSearching { cancelHintSearch() }
         zoomPct = fitZoom(preferredZoomPct)
         updateWindowTitle()
     }
@@ -1134,6 +1139,7 @@ final class GameController: ObservableObject {
 
     /// 이동 뒤 공통 처리: 타이머·자동 올리기·자동 완성·승리 확인.
     func afterMove() {
+        if hintSearching { cancelHintSearch() }
         startTimer()
         markPlayedIfNeeded()
         if autoOn(.collect) && !game.foundations.isEmpty {
@@ -1179,17 +1185,84 @@ final class GameController: ObservableObject {
     }
 
     // ── 힌트 ──────────────────────────────────────────────────────────────
+    /// 이기는 해답을 찾아 첫 수를 보여 준다.
+    ///
+    /// 예전 힌트는 "지금 둘 수 있는 한 수"를 점수로만 골라 A→B, B→A 같은
+    /// 왕복 수를 계속 권했다. 지금은 판 전체를 탐색해 이기는 줄의 첫 수만
+    /// 보여 주고, 풀 수 없음(증명)과 판단 불가(시간 초과)를 구분해 알린다.
     func showHint() {
-        if busy { return }
-        guard let hint = game.hint() else {
-            Logger.shared.info("힌트", "둘 수 있는 수 없음")
+        if busy || preparingDeal || hintSearching { return }
+        // 풀리는 스파이더 판은 배분할 때 찾아 둔 해답이 있어 바로 안내한다.
+        if let spider = game as? Spider, let planned = spider.planHint() {
+            presentHint(planned, solvedCount: nil, planned: true)
+            return
+        }
+        let snapshot = game.exportSnapshot()
+        let kind = variant
+        let drawCount = (game as? Klondike)?.drawCount ?? 3
+        let suits = (game as? Spider)?.suits ?? 1
+        let suitFree = (game as? Spider)?.suitFree ?? false
+        let budget = HintSolver.budget(for: kind)
+        hintSearching = true
+        setHint("이기는 해답을 찾는 중…", seconds: 30)
+        Logger.shared.info("힌트", "탐색 시작(\(kind.rawValue), \(budget.time)초)")
+        let token = UUID()
+        hintSearchToken = token
+        Task.detached(priority: .userInitiated) {
+            let result = HintSolver.solve(kind: kind, snapshot: snapshot,
+                                          drawCount: drawCount, suits: suits,
+                                          suitFree: suitFree,
+                                          timeLimit: budget.time,
+                                          nodeLimit: budget.nodes)
+            await MainActor.run { [weak self] in
+                self?.finishHintSearch(result, snapshot: snapshot, token: token)
+            }
+        }
+    }
+
+    /// 판이 바뀌면 진행 중인 힌트 탐색 결과를 버린다.
+    private func cancelHintSearch() {
+        hintSearchToken = UUID()
+        hintSearching = false
+        restoreHint()
+    }
+
+    private func finishHintSearch(_ result: HintSearchResult, snapshot: GameSnapshot,
+                                  token: UUID) {
+        guard token == hintSearchToken else { return }
+        hintSearching = false
+        // 탐색하는 동안 판이 바뀌었으면 결과를 버린다(다른 판에 힌트를 주지 않는다).
+        guard !busy, game.exportSnapshot() == snapshot else {
+            restoreHint()
+            return
+        }
+        switch result {
+        case .solved(let line):
+            guard let hint = line.first else { restoreHint(); return }
+            presentHint(hint, solvedCount: line.count, planned: false)
+        case .impossible:
+            restoreHint()
+            Logger.shared.info("힌트", "이길 수 없는 판으로 판정")
             alert = AlertInfo(title: "힌트",
-                              message: "지금은 둘 수 있는 수가 없습니다.\n되돌리기(⌘Z)로 이전 수를 취소하거나 새 게임을 시작하세요.",
+                              message: "이 판은 지금 상태에서 더는 이길 수 없습니다.\n"
+                                + "되돌리기(⌘Z)로 이전 수를 취소하거나 새 게임을 시작하세요.",
                               primaryTitle: "닫기",
                               secondaryTitle: "새 게임",
                               secondaryAction: { [weak self] in self?.requestNewGame() })
-            return
+        case .unknown:
+            restoreHint()
+            Logger.shared.info("힌트", "시간 안에 해답을 찾지 못함")
+            alert = AlertInfo(title: "힌트",
+                              message: "제한 시간 안에 확실한 해답을 찾지 못했습니다.\n"
+                                + "이 판이 풀린다고 단정할 수 없어 아무 수도 권하지 않습니다.\n"
+                                + "되돌리기(⌘Z)로 이전 수를 취소하거나 새 게임을 시작해 보세요.",
+                              primaryTitle: "닫기",
+                              secondaryTitle: "새 게임",
+                              secondaryAction: { [weak self] in self?.requestNewGame() })
         }
+    }
+
+    private func presentHint(_ hint: Hint, solvedCount: Int?, planned: Bool) {
         switch hint {
         case .draw, .recycle:
             let text = hint == .draw
@@ -1202,6 +1275,15 @@ final class GameController: ObservableObject {
         case .move(let src, let index, let dst):
             let cards = game.pick(src, index: index) ?? []
             flash(cards: cards, slots: [dst])
+            let label: String
+            if planned {
+                label = "해답의 다음 수입니다"
+            } else if let count = solvedCount, count > 1 {
+                label = "이기는 해답 \(count)수 중 첫 수입니다"
+            } else {
+                label = "이기는 수를 찾았습니다"
+            }
+            setHint(label, seconds: 5)
             Logger.shared.info("힌트", "\(src.kind.rawValue) \(src.index) → \(dst.kind.rawValue) \(dst.index)")
         }
     }
